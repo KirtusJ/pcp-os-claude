@@ -1,0 +1,10 @@
+{
+ "component_id": "acr.core",
+ "files": {
+  "MODULES/01_Core/SOURCE/Specification.md": "649211ff2d765e06b5d5eb31dc80af6f97aedea242f2dcb5b77b3fa270ef34d6",
+  "SUPPLEMENTS/Core_Conditional/Command_Interface.md": "001871e7e3ffae3314b37c54cd4d923a83bf62331947e9731a60de0da2a0c68b",
+  "SUPPLEMENTS/Core_Conditional/Methods_Catalog.md": "b80d9b7ee61afa93d761ae51c8f07f5eddfad599ba787ed3baae2230954bf621",
+  "SUPPLEMENTS/Core_Conditional/Record_Contracts.md": "7f487b1f0f1c94c702a80b08ec32d24adff9771faefea2440fc7baeff35294b9"
+ },
+ "version": "1.0"
+}

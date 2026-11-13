@@ -1,0 +1,179 @@
+{
+ "product_version": "1.0",
+ "product": "ACR",
+ "method": "Adversarial Claim Review",
+ "packet": "IMPLEMENTATION",
+ "predecessor_package": {
+  "sha256": "c7fdab2980532064f4a70a43f53094dbc546cadb1248f834cc6b81d3031d9dc4",
+  "note": "The preceding pre-publication build of the Implementation packet. Every component is Version 1.0 in both builds; the digests below identify the exact texts."
+ },
+ "markdown_sources": {
+  "GUIDES/Entry_Card.md": {
+   "sha256": "484aa17a412ba3da7954a52f04276977c1aabbaf268179e73f32908815fb576e",
+   "status": "UNCHANGED"
+  },
+  "GUIDES/Integration_Guide.md": {
+   "sha256": "79c556c7ec428888422ccdb02c5cf6fe0dc92b8d85c87152583f2e34b9644e01",
+   "status": "CHANGED",
+   "predecessor_sha256": "9e329eb8174144903dec4c65a46a0b88952bb00e59ee647e91ca5965eaccce94"
+  },
+  "GUIDES/Module_Map.md": {
+   "sha256": "1be38d5b6d6078f95f6867d949e3513cce5e3c94a24b91c34e090aa33fab7b5e",
+   "status": "UNCHANGED"
+  },
+  "GUIDES/Safety_Handbook.md": {
+   "sha256": "50c0b61c6788cae615138f6698007ebe8c28c6a5ffef06ba66214577c46c9d4b",
+   "status": "CHANGED",
+   "predecessor_sha256": "5b92a88626fdb58361fd22459598a699d94020314e204fbb4840082bb8f3e64b"
+  },
+  "INTEGRATION/Behavioral_Probes.md": {
+   "sha256": "dbc3f2f85a53948d5399c76882b51b8c9363b074108e8c6e89000c04ea909abe",
+   "status": "CHANGED",
+   "predecessor_sha256": "cd9ffac814ed0051fc0e41e25c4cd63e20f901e562631021cc03066a7720a51a"
+  },
+  "INTEGRATION/agent-skill/acr/KERNEL.md": {
+   "sha256": "b8d509386caf0330150673d2da70f0daf1039d4410ed755571dd826fd8b0148a",
+   "status": "CHANGED",
+   "predecessor_sha256": "665c8c1f5b29f88e13aef9c6b5e4de4b6a70c123aa34329bb664de2868c16f8f"
+  },
+  "INTEGRATION/agent-skill/acr/SKILL.md": {
+   "sha256": "86f7fe4386a8ad63a2b36da760d40b6f57eba4bbcb0bea686b11a5a478438e9a",
+   "status": "UNCHANGED"
+  },
+  "KERNEL.md": {
+   "sha256": "b8d509386caf0330150673d2da70f0daf1039d4410ed755571dd826fd8b0148a",
+   "status": "CHANGED",
+   "predecessor_sha256": "665c8c1f5b29f88e13aef9c6b5e4de4b6a70c123aa34329bb664de2868c16f8f"
+  },
+  "KERNEL_CARD.md": {
+   "sha256": "b1b1ca33d7b4ec9fce07ac9c9cdee3b3e0b634a814d1696eb6ab8de878edd117",
+   "status": "UNCHANGED"
+  },
+  "MODULES/01_Core/SOURCE/Overview.md": {
+   "sha256": "63a1289cd59d582d01de5091dda2f735e37ba78d0d16d25bb2794ef19d68250d",
+   "status": "UNCHANGED"
+  },
+  "MODULES/01_Core/SOURCE/Specification.md": {
+   "sha256": "649211ff2d765e06b5d5eb31dc80af6f97aedea242f2dcb5b77b3fa270ef34d6",
+   "status": "CHANGED",
+   "predecessor_sha256": "7f810aa6b3fa105b90842891b87b81c5b138c6c957f8c7a6cc26fcb70107f531"
+  },
+  "MODULES/02_Mathematics/SOURCE/Overview.md": {
+   "sha256": "e0c94755e7fce1bf3735ca94dd567d58b23f3448cfd4c410dab123a095e5e39f",
+   "status": "CHANGED",
+   "predecessor_sha256": "ec3beace838c15b9e2f2f3a958c385ca78759ca57ad4c73f7322676a02a4f72e"
+  },
+  "MODULES/02_Mathematics/SOURCE/Specification.md": {
+   "sha256": "8da02f39bd7f91a6f3768644695e6d51739ac9cd5216f606f32647eac5c03361",
+   "status": "CHANGED",
+   "predecessor_sha256": "7d835acaace681f6484089094ac2eafbd45db3af2ceda877992dcee7ae085d41"
+  },
+  "MODULES/03_Science/SOURCE/Overview.md": {
+   "sha256": "8a836958a4b96fe2c55a631c2ad0d750c5eb08611ee57c59b2a529fdbf4c0a23",
+   "status": "CHANGED",
+   "predecessor_sha256": "c2ec42a65235b567b4edc9e72b72e320e64a3036bd52dd146796f5813f696f4f"
+  },
+  "MODULES/03_Science/SOURCE/Specification.md": {
+   "sha256": "e1a3466816fb4b57e787ed91e51dd2f1c3a67eca5fb8d033900e31f07c5b417e",
+   "status": "CHANGED",
+   "predecessor_sha256": "9d2e5cb0854f425377c52148a0ca4824438ead1b60f2aa6df488763aaf8cf06f"
+  },
+  "MODULES/04_Engineering/SOURCE/Overview.md": {
+   "sha256": "43c3c8e79fbd7e51d289ce73d467edccdef23bd452e2482331010a3679d67957",
+   "status": "CHANGED",
+   "predecessor_sha256": "5b1d6dd2299b3245a7c60c3f720b7db674d6689de7479948317efcd0cb08e2e9"
+  },
+  "MODULES/04_Engineering/SOURCE/Specification.md": {
+   "sha256": "a7a9b21b2c73753510c9fa854fbd2c96cbec6c7f4ebdd5c69b783c1f5ef3b28e",
+   "status": "CHANGED",
+   "predecessor_sha256": "1a2f6baec0846bfb7a139fd717687d87a7b7b36fe2ef138d5dd48f6857dfc7f6"
+  },
+  "MODULES/05_Cryptography/SOURCE/Overview.md": {
+   "sha256": "c8000ba3924c02602cd889eb296c736eda12e92ed1fbb17f34e409660af0b499",
+   "status": "CHANGED",
+   "predecessor_sha256": "f7f7cf2c9cdf31f4c04cea9129a99d63c96580b0c7cb8e03a7208dfe27c7367c"
+  },
+  "MODULES/05_Cryptography/SOURCE/Specification.md": {
+   "sha256": "601502fa38d246c8c84a64ad5afd410023d3256f38ba56a1c3bc84683691efc7",
+   "status": "CHANGED",
+   "predecessor_sha256": "e3792e4e095ddb3d814abf64bf1d3bf6ebfb64902d697b079068d14feb5132ec"
+  },
+  "MODULES/06_Statistics/SOURCE/Overview.md": {
+   "sha256": "5ea75bb3e860db1e0f9e848ff052f141f8d5cfc744502709d8d6db5f014fd578",
+   "status": "CHANGED",
+   "predecessor_sha256": "1bd829b435c8f288ce6b26106dc4e5fe77b4fb685799381ee60133ed788bef05"
+  },
+  "MODULES/06_Statistics/SOURCE/Specification.md": {
+   "sha256": "da11d9702d69c2d168c60ac63801be6c78c208677dc5f153106d83ba04378643",
+   "status": "CHANGED",
+   "predecessor_sha256": "cb2a43ebd8d41675da40cf58f321aceb7ee4c9fecc9de9fd03b568ddc46a26d0"
+  },
+  "MODULES/07_Quality_Assurance/SOURCE/Overview.md": {
+   "sha256": "3c4c118677b3820192920ef0779dad1dd0d36e1f26cde5599c17d501ce2afa16",
+   "status": "CHANGED",
+   "predecessor_sha256": "40628f6dc8d46d6e57e259b7b9b8c77369f4bfecc464926d54144afe770e53db"
+  },
+  "MODULES/07_Quality_Assurance/SOURCE/Specification.md": {
+   "sha256": "60f22e0318c87b5151f7498010fc9161b488568ac0d42b28050e0188e39c34c2",
+   "status": "CHANGED",
+   "predecessor_sha256": "3f2bbc2c779c292392427b532594a143ebc3b6eb3a83cf861562400c94ddcf83"
+  },
+  "NOTICE.md": {
+   "sha256": "73d24cecddcef3538d0740dc2790b59dfcb282961322fe504254c0a8f78d33cc",
+   "status": "UNCHANGED"
+  },
+  "README.md": {
+   "sha256": "efe6b0ac91115154c6c1903cb935cd13a9e7aa34b8ade83cb5a4ef3ef488913c",
+   "status": "CHANGED",
+   "predecessor_sha256": "618c748d975f1b8fca660a7c61bcd2acec56366b55e879a557b31429fb7889a3"
+  },
+  "REFERENCE/Implementation_Limits.md": {
+   "sha256": "61d1d6b96e019f6e19372aad16456fe089405b260b9272b0e78bfe734ca4da79",
+   "status": "UNCHANGED"
+  },
+  "REFERENCE/Selection_Contract.md": {
+   "sha256": "872b77500f1c3a6b6c3b572f38a9f0796275c4a204338aff19a6dd33e7c20051",
+   "status": "UNCHANGED"
+  },
+  "RELEASE/External_Reference_Points.md": {
+   "sha256": "15fb4b0f83002e0c66fcca519c85e57ba3ef874da458edd5ea5ec14425f624c0",
+   "status": "UNCHANGED"
+  },
+  "RELEASE/Known_Limitations.md": {
+   "sha256": "6cee76eec34297a375b9c68fcf75c3fb13745d151e04f11d4538034c677974f8",
+   "status": "CHANGED",
+   "predecessor_sha256": "9ef3f6a3fd4a27503f3340cbc8056e0a6344838575cc540d3331f5f7a5c5bbfe"
+  },
+  "START_HERE.md": {
+   "sha256": "3af1ba5d1b6cb83bdb831edd125f4a3ec0123b43d847b5489bcd0d3ce5078d54",
+   "status": "CHANGED",
+   "predecessor_sha256": "df3d040455562bc03f8ab1df3298b93bfb73864094af0eb37b25762ad3671926"
+  },
+  "SUPPLEMENTS/Core_Conditional/Command_Interface.md": {
+   "sha256": "001871e7e3ffae3314b37c54cd4d923a83bf62331947e9731a60de0da2a0c68b",
+   "status": "UNCHANGED"
+  },
+  "SUPPLEMENTS/Core_Conditional/Methods_Catalog.md": {
+   "sha256": "b80d9b7ee61afa93d761ae51c8f07f5eddfad599ba787ed3baae2230954bf621",
+   "status": "UNCHANGED"
+  },
+  "SUPPLEMENTS/Core_Conditional/Record_Contracts.md": {
+   "sha256": "7f487b1f0f1c94c702a80b08ec32d24adff9771faefea2440fc7baeff35294b9",
+   "status": "CHANGED",
+   "predecessor_sha256": "2f8545aeb4ae064e1bac059712d1ae7d6baff96a6dc69d9a84fa132aedda6d57"
+  },
+  "TEMPLATES/Review_Record.md": {
+   "sha256": "ed7de1fbb9484b0222ef8d9664d2d883086619920579ffc92b39714ea68d319d",
+   "status": "UNCHANGED"
+  },
+  "TEMPLATES/Task_Record.md": {
+   "sha256": "83835c7c8f1d6c3e7073b0d7d0f6aafd28114eb2ba5b512cc1a168bfa3305bee",
+   "status": "UNCHANGED"
+  },
+  "TEMPLATES/Trace_Reading.md": {
+   "sha256": "67b2acb54540e6b1599a1662b5ef2154535d4f16ff81b19019f8e393f42d7726",
+   "status": "UNCHANGED"
+  }
+ },
+ "reading_copies": "Distributed separately in the Readers packet, whose manifest records the source digest from which each PDF was generated."
+}

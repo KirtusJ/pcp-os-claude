@@ -1,0 +1,34 @@
+{
+  "name": "pcp-os",
+  "displayName": "PCP OS",
+  "version": "1.0.22",
+  "description": "Parrot Council Protocol (PCP) over the native core of PCP OS: Adversarial Claim Review (ACR) recorded in a hash-chained register whose guards check every event outside the assistant's context, with module workspaces, a task view and hooks that record what the host observes.",
+  "author": {
+    "name": "Kirtus Justus"
+  },
+  "license": "LicenseRef-Proprietary",
+  "keywords": [
+    "review",
+    "claims",
+    "evidence",
+    "epistemology",
+    "audit",
+    "register",
+    "pcp",
+    "acr"
+  ],
+  "experimental": {
+    "themes": "./themes/"
+  },
+  "metadata": {
+    "product": "Parrot Council Protocol",
+    "method": "Adversarial Claim Review",
+    "product_version": "1.0",
+    "build": 22,
+    "build_date": "2026-11-13",
+    "method_manifest_sha256": "7ff72eed9162e2c11fc62f6681c4afbc29524bfa96b87d45a455423d027d4707",
+    "edition_overlay": "edition/",
+    "delivery": "TOOL_ASSISTED",
+    "program_sha256": "c2c6795d36027c6e9041d63c5349f97434fe5709a6bcb649f4146faee9f03dcd"
+  }
+}
