@@ -32,9 +32,14 @@ It exercises:
    and its parent folders, so no earlier mutation influences the result.
 10. A symlink replacing a **manifest-listed** Specification with identical
     bytes outside the method tree, refused despite matching its listed digest.
+11. A manifest-listed but **optional** `TOOLS/acr.py` that exists and is
+    unreadable: a read permission error is not a legitimate omitted-file
+    condition. A readable modified file is the paired positive control.
+    This case is skipped only when the test runner can read a mode-000 file
+    (for example as root).
 
 The current build 22 binary passes controls 1 and 4, discovers the new module,
-but incorrectly succeeds on controls 2, 5, 6, 7, 9, and 10. It exits 0 for the original method directory and for the four unlisted-entry variants, while
+but incorrectly succeeds on controls 2, 5, 6, 7, 9 and 10, and on 11 when run without privileged file-read override. It exits 0 for the original method directory and for the unlisted-entry variants, while
 reporting the same manifest fingerprint and listed-file counts. The disposable
 register also records `FILES_VERIFIED_AGAINST_OWN_MANIFEST` for the injected
 module, contrary to the requirement's intended difference from released text. Thus the regression script intentionally exits
@@ -55,8 +60,10 @@ separate proprietary source archive, at
 `PCP_OS_Rust/crates/pcpos-host/src/pcpos.rs`, must report unexpected entries
 and withhold whole-tree identity when they exist. Ensure the same distinction is
 retained when a fresh register records `METHOD_PINNED`.
-Handle symlinks and directory read failures explicitly; keep the documented
-text-only plugin omissions distinct from *additional* files.
+Handle symlinks, unexpected directories and directory read failures explicitly;
+only `NotFound` establishes that an optional tool/probe is absent. `PermissionDenied`
+and other I/O errors must never be treated as legitimate omissions. Keep the documented
+text-only plugin omissions distinct from *additional* and *unreadable* files.
 
 The Rust source and reproducible build system are not in this GitHub repository.
 Do not label this PR a product fix. The rights holder must apply, compile and
