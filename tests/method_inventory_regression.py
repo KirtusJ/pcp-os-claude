@@ -77,6 +77,18 @@ def test(binary: Path, method: Path) -> list[str]:
         if "auditprobe" not in modules.stdout.lower():
             problems.append("unlisted module not discoverable; reproduction differs")
         extra.unlink()
+        extra.parent.rmdir()  # SOURCE
+        extra.parent.parent.rmdir()  # 99_AuditProbe
+
+        # An otherwise empty, entirely unlisted directory also changes the
+        # method-tree inventory. Keep it isolated from subsequent controls.
+        empty_module = root / "MODULES/99_Empty"
+        empty_module.mkdir()
+        empty = invoke(binary, "method", root)
+        print("unlisted empty directory:", empty.returncode, empty.stdout.strip())
+        if empty.returncode == 0:
+            problems.append("unlisted empty directory was accepted as release-identical")
+        empty_module.rmdir()
 
         original.write_text(source + "\nAUDIT_NEGATIVE_CONTROL\n", encoding="utf-8")
         modified = invoke(binary, "method", root)
@@ -103,6 +115,20 @@ def test(binary: Path, method: Path) -> list[str]:
         if linked.returncode == 0:
             problems.append("unlisted symlink was accepted as release-identical")
         link.unlink()
+
+        # This symlink REPLACES a manifest-listed path with byte-identical
+        # content kept outside the method tree. Hash matching alone is not
+        # sufficient to assert the packaged file's local identity.
+        shadow = Path(temp) / "shadow-science-spec.md"
+        shadow.write_text(source, encoding="utf-8")
+        original.unlink()
+        original.symlink_to(shadow)
+        listed_link = invoke(binary, "method", root)
+        print("manifest-listed symlink:", listed_link.returncode, listed_link.stdout.strip())
+        if listed_link.returncode == 0:
+            problems.append("symlink replacing a manifest-listed source was accepted as release-identical")
+        original.unlink()
+        original.write_text(source, encoding="utf-8")
 
         # Omission of the packet's TOOLS/ programs is legitimate in the plugin,
         # but addition of unlisted TOOLS/ content is a different condition.
