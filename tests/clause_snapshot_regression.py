@@ -25,20 +25,29 @@ HEADER = re.compile(r"acr\.core\s+1\.0\s*\|\s*Specification SHA-256 ([0-9a-f]{64
 MARKERS = ("SOURCE_SNAPSHOT_ALPHA", "SOURCE_SNAPSHOT_BETA")
 
 
-def query(binary: Path, method: Path, hashes: tuple[str, str]) -> tuple[dict, bool]:
+def query(binary: Path, method: Path, hashes: tuple[str, str]) -> tuple[dict, str]:
     p = subprocess.run([str(binary), "clause", str(method), "core", "1.1"],
                        text=True, capture_output=True, check=False, timeout=4)
     m = HEADER.search(p.stdout)
     claimed = m.group(1) if m else None
     observed = [i for i, marker in enumerate(MARKERS) if marker in p.stdout]
     matching = p.returncode == 0 and len(observed) == 1 and claimed == hashes[observed[0]]
+    if p.returncode == 0:
+        verdict = "SERVED_CONSISTENT" if matching else "SERVED_MIXED_IDENTITY"
+    elif p.returncode == 6 and "changed during clause retrieval" in p.stderr:
+        # A fixed host may reject a method that changed between source
+        # discovery and retrieval. That is a safe, expected race outcome.
+        verdict = "REFUSED_CHANGED_SOURCE"
+    else:
+        verdict = "UNEXPECTED_REFUSAL"
     return {
         "exit": p.returncode,
         "header_sha256": claimed,
         "served_variant": observed,
         "sha256_of_served_variant": hashes[observed[0]] if len(observed) == 1 else None,
-        "matching": matching,
-    }, matching
+        "stderr": p.stderr.strip()[:240] if p.returncode else "",
+        "verdict": verdict,
+    }, verdict
 
 
 def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: float = 8.0) -> dict:
@@ -57,9 +66,9 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
         controls = []
         for i in (0, 1):
             spec.write_bytes(versions[i])
-            row, valid = query(binary, copy, hashes)
+            row, verdict = query(binary, copy, hashes)
             controls.append(row)
-            if not valid or row["served_variant"] != [i]:
+            if verdict != "SERVED_CONSISTENT" or row["served_variant"] != [i]:
                 raise AssertionError(f"stable variant {i} control failed: {row}")
         spec.write_bytes(versions[0])
 
@@ -81,13 +90,21 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
         writer = threading.Thread(target=swap, daemon=True)
         writer.start()
         mismatches = []
+        refused = 0
+        unexpected = []
         calls = 0
         start = time.monotonic()
         try:
             while calls < max_calls and time.monotonic() - start < deadline_seconds:
                 calls += 1
-                row, valid = query(binary, copy, hashes)
-                if not valid:
+                row, verdict = query(binary, copy, hashes)
+                if verdict == "REFUSED_CHANGED_SOURCE":
+                    refused += 1
+                elif verdict == "UNEXPECTED_REFUSAL":
+                    row["call"] = calls
+                    unexpected.append(row)
+                    break
+                elif verdict == "SERVED_MIXED_IDENTITY":
                     row["call"] = calls
                     mismatches.append(row)
                     if len(mismatches) == 2:
@@ -101,8 +118,11 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
             "calls": calls,
             "atomic_replacements": count[0],
             "observed_mismatches": mismatches,
+            "safe_changed_source_refusals": refused,
+            "unexpected_failures": unexpected,
             "writer_errors": errors,
-            "result": "CROSSED_IDENTITY_OBSERVED" if mismatches else "NOT_OBSERVED_IN_BOUNDED_RUN",
+            "result": ("CROSSED_IDENTITY_OBSERVED" if mismatches else
+                       "UNEXPECTED_FAILURE" if unexpected else "NOT_OBSERVED_IN_BOUNDED_RUN"),
             "limitation": "No mismatch in a finite race test is not proof of race freedom. Source code must use one coherent byte snapshot.",
         }
 
@@ -114,4 +134,4 @@ if __name__ == "__main__":
         raise SystemExit("Requires packaged Linux x86_64 pcpos and method folder, or explicit paths")
     outcome = probe(executable.resolve(), method.resolve())
     print(json.dumps(outcome, indent=2))
-    raise SystemExit(2 if outcome["writer_errors"] else 1 if outcome["observed_mismatches"] else 0)
+    raise SystemExit(2 if outcome["writer_errors"] else 1 if outcome["observed_mismatches"] or outcome["unexpected_failures"] else 0)
