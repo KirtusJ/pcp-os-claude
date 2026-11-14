@@ -28,9 +28,13 @@ It exercises:
    method trees. The clean tree must produce `METHOD_PINNED` with
    `FILES_VERIFIED_AGAINST_OWN_MANIFEST`; the extra-module tree must instead
    produce `DECLARED_NOT_VERIFIED`, rather than inheriting the clean status.
+9. An unlisted **empty directory**, checked after removing the injected module
+   and its parent folders, so no earlier mutation influences the result.
+10. A symlink replacing a **manifest-listed** Specification with identical
+    bytes outside the method tree, refused despite matching its listed digest.
 
 The current build 22 binary passes controls 1 and 4, discovers the new module,
-but incorrectly succeeds on controls 2, 5, 6, and 7. It exits 0 for the original method directory and for the four unlisted-entry variants, while
+but incorrectly succeeds on controls 2, 5, 6, 7, 9, and 10. It exits 0 for the original method directory and for the four unlisted-entry variants, while
 reporting the same manifest fingerprint and listed-file counts. The disposable
 register also records `FILES_VERIFIED_AGAINST_OWN_MANIFEST` for the injected
 module, contrary to the requirement's intended difference from released text. Thus the regression script intentionally exits
