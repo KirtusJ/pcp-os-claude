@@ -61,6 +61,31 @@ def test(binary: Path, method: Path) -> list[str]:
         print("unlisted file:", other.returncode, other.stdout.strip())
         if other.returncode == 0:
             problems.append("unlisted file was accepted as release-identical")
+        stray.unlink()
+
+        # An unexpected symbolic link must not silently count as release text.
+        # The target is deliberately a real listed source, so this also covers
+        # a link that resolves successfully; the scanner should not follow it.
+        link = root / "unexpected-source-link.md"
+        link.symlink_to("MODULES/03_Science/SOURCE/Specification.md")
+        linked = invoke(binary, "method", root)
+        print("unlisted symlink:", linked.returncode, linked.stdout.strip())
+        if linked.returncode == 0:
+            problems.append("unlisted symlink was accepted as release-identical")
+        link.unlink()
+
+        # Omission of the packet's TOOLS/ programs is legitimate in the plugin,
+        # but addition of unlisted TOOLS/ content is a different condition.
+        tools_dir = root / "TOOLS"
+        tools_dir.mkdir(exist_ok=True)
+        rogue = tools_dir / "not-in-release.txt"
+        rogue.write_text("extra executable-support data\\n", encoding="utf-8")
+        omitted_subtree = invoke(binary, "method", root)
+        print("unlisted TOOLS entry:", omitted_subtree.returncode, omitted_subtree.stdout.strip())
+        if omitted_subtree.returncode == 0:
+            problems.append("unlisted file under omitted TOOLS/ was accepted as release-identical")
+        rogue.unlink()
+        tools_dir.rmdir()
     return problems
 
 
