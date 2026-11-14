@@ -9,6 +9,8 @@ Run `python3 tests/method_inventory_regression.py` in this plugin repository on
 Linux x86_64, with its packaged `servers/linux-x86_64/pcpos` executable.
 
 The test copies the distributed `method/` directory to a temporary location.
+It also creates isolated temporary registers through the CLI's `init` command.
+No review is adopted or commissioned, and no actual project register is changed.
 It exercises:
 
 1. The unchanged plugin method tree, which must succeed.
@@ -22,11 +24,16 @@ It exercises:
    packaged release text merely because its target can be read.
 7. An unlisted file inside an optional `TOOLS/` directory: legitimate omission
    of a plugin tool is not permission to add an untracked file in that subtree.
+8. A **disposable** register initialized under both the clean and the extra-module
+   method trees. The clean tree must produce `METHOD_PINNED` with
+   `FILES_VERIFIED_AGAINST_OWN_MANIFEST`; the extra-module tree must instead
+   produce `DECLARED_NOT_VERIFIED`, rather than inheriting the clean status.
 
 The current build 22 binary passes controls 1 and 4, discovers the new module,
-but incorrectly succeeds on controls 2, 5, 6, and 7. It exits 0 for the original method
-directory and for both unlisted-entry variants, while reporting the same manifest
-fingerprint and listed-file counts. Thus the regression script intentionally exits
+but incorrectly succeeds on controls 2, 5, 6, and 7. It exits 0 for the original method directory and for the four unlisted-entry variants, while
+reporting the same manifest fingerprint and listed-file counts. The disposable
+register also records `FILES_VERIFIED_AGAINST_OWN_MANIFEST` for the injected
+module, contrary to the requirement's intended difference from released text. Thus the regression script intentionally exits
 with code 1 until the binary is repaired.
 
 ## What the test does NOT establish
