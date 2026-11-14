@@ -38,12 +38,35 @@ It exercises:
     This case is skipped only when the test runner can read a mode-000 file
     (for example as root).
 
+12. A **named pipe** replacing `MANIFEST.json`. The diagnostic must return
+    promptly rather than block trying to read a pipe with no writer.
+13. A **named pipe** replacing a manifest-listed Science Specification. The
+    diagnostic must return promptly and report that this listed entry is
+    non-regular or unreadable, not treat it as an omitted plugin program.
+14. A symlink replacing `MANIFEST.json` that points to byte-identical
+    content outside the method directory. Verification of an unmodified copy
+    must not be inferred from following the symlink.
+
+For controls 12–13 each subprocess is bounded to **2 seconds**; on timeout
+the test records a failed control, forcibly ends that subprocess and restores
+the original file. The test checks restoration after every mutation and at
+completion. A timeout is a bounded observation of blocking under the test's
+conditions, not proof of a remote denial-of-service exploit.
+
 The current build 22 binary passes controls 1 and 4, discovers the new module,
 but incorrectly succeeds on controls 2, 5, 6, 7, 9 and 10, and on 11 when run without privileged file-read override. It exits 0 for the original method directory and for the unlisted-entry variants, while
 reporting the same manifest fingerprint and listed-file counts. The disposable
 register also records `FILES_VERIFIED_AGAINST_OWN_MANIFEST` for the injected
 module, contrary to the requirement's intended difference from released text. Thus the regression script intentionally exits
 with code 1 until the binary is repaired.
+
+This is a separate pre-read availability failure: a named pipe substituted
+for the manifest or a listed Specification blocks `fs::read` before the
+old source-level directory scanner would run. An implementation fix must
+inspect file types before reading, handle replacement races without following
+symlinks, and bound reads. Nonblocking read opens on Linux are one means of
+preventing a race-swapped FIFO from blocking; the verifier remains a
+non-atomic filesystem diagnostic, not a lock or sandbox.
 
 ## What the test does NOT establish
 
