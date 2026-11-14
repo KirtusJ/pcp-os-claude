@@ -141,6 +141,32 @@ def test(binary: Path, method: Path) -> list[str]:
         if omitted_subtree.returncode == 0:
             problems.append("unlisted file under omitted TOOLS/ was accepted as release-identical")
         rogue.unlink()
+
+        # This path IS listed in the manifest but MAY be missing in a plugin.
+        # A present but unreadable file is not an omission and cannot inherit
+        # verification of the released bytes. The old code treated all
+        # fs::read failures as "absent", including PermissionDenied.
+        optional = tools_dir / "acr.py"
+        optional.write_bytes(b"INJECTED NOT-RELEASE DATA\\n")
+        readable = invoke(binary, "method", root)
+        print("readable changed optional tool:", readable.returncode, readable.stdout.strip())
+        if readable.returncode == 0:
+            problems.append("readable changed manifest-listed optional tool accepted")
+        optional.chmod(0o000)
+        try:
+            try:
+                optional.read_bytes()
+            except PermissionError:
+                unreadable = invoke(binary, "method", root)
+                print("unreadable optional tool:", unreadable.returncode,
+                      unreadable.stdout.strip())
+                if unreadable.returncode == 0:
+                    problems.append("unreadable manifest-listed optional tool counted as absent")
+            else:
+                print("SKIP unreadable-optional-tool control: this account can read mode 000 files")
+        finally:
+            optional.chmod(0o600)
+            optional.unlink()
         tools_dir.rmdir()
     return problems
 
