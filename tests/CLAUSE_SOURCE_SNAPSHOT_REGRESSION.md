@@ -40,3 +40,21 @@ This is distinct from [method-directory inventory issue #1](https://github.com/K
 **Related issue:** #4.
 
 **No claim:** compiled Rust fix, host-enforced ACR compliance, independent calibration, or production suitability.
+
+
+## Concurrent named-pipe replacement control
+
+Run `python3 tests/clause_fifo_race_regression.py` on a compatible Linux x86_64 host. It uses the packaged binary and makes only a temporary copy of `method/`. It checks:
+
+1. A stable regular Core Specification is served successfully (exit 0).
+2. A stable FIFO substituted for Core is refused promptly (exit 6; no Core module is discoverable).
+3. During atomic replacement of the same path between complete regular-file contents and a FIFO, each `pcpos clause` subprocess either returns or is forcibly terminated after 0.45 seconds; at most eight calls are made.
+4. For a timed-out child, Linux `/proc/<pid>/wchan` is read when permitted. This is diagnostic only and is not used as a correctness oracle.
+
+**Exit 1:** a timed-out child was observed during the adversarial swapping; an availability defect remains in this run. **Exit 0:** no timeout observed in this bounded run, which is *not* evidence of race freedom. **Exit 2:** prerequisites or writer failed; no behavioral conclusion. The source-level property must be checked deterministically and the normal suite run before claiming a repair.
+
+The original build 22 executable was separately tested. Stable regular Core returned exit 0 in **4.3 ms**; stable FIFO returned exit 6 in **2.4 ms**. Under atomic regular/FIFO replacement, the first clause command remained unfinished at 350 ms, and `/proc/<pid>/wchan` showed **`wait_for_partner`** while it was sleeping. There were **1,575 completed swap cycles** with no writer error. That Linux wait channel is consistent with opening a FIFO without a reader/writer counterpart. These are artificial local conditions, not deployment rates or remote-access findings.
+
+The Rust source currently uses a separate `fs::metadata` then `fs::read` in module discovery and `fs::read_to_string` for clause rendering. Fixing only the digest comparison in the second read would still leave a blocking path. The implementation should use a bounded, non-following, nonblocking regular-file reader for **both discovery and clause rendering**, and refuse to label returned bytes with another read's Specification digest.
+
+This is still an evidence/acceptance PR. It contains neither the proprietary Rust workspace nor rebuilt binaries. See linked issue #4.
