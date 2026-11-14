@@ -3,11 +3,13 @@
 
 Run from the repository: python3 tests/method_inventory_regression.py
 This intentionally exits 1 against the affected build-22 binary. It creates
-disposable copies only and never changes the installed plugin or a register.
+disposable method copies and temporary registers only; it never touches a real workspace.
 """
 from __future__ import annotations
 
 import argparse
+import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -22,6 +24,26 @@ def invoke(binary: Path, verb: str, method: Path) -> subprocess.CompletedProcess
     )
 
 
+def initial_method_pin(binary: Path, method: Path, workspace: Path) -> str:
+    """Create a disposable register without adopting ACR, then inspect METHOD_PINNED."""
+    workspace.mkdir()
+    register = workspace / ".pcp/register.jsonl"
+    env = dict(os.environ, PCPOS_ROOT=str(workspace), PCPOS_METHOD=str(method),
+               PCPOS_ACTOR="auditor", PCPOS_PRINCIPAL="operator", PCPOS_EDITION="ENTERPRISE")
+    run = subprocess.run(
+        [str(binary), "init", str(register), "--principal", "operator"],
+        capture_output=True, text=True, check=False, env=env,
+    )
+    if run.returncode != 0 or not register.is_file():
+        return f"INIT_FAILED: exit={run.returncode} {run.stderr.strip()}"
+    events = [json.loads(line) for line in register.read_text(encoding="utf-8").splitlines()]
+    pins = [event.get("body", {}).get("verified")
+            for event in events if event.get("kind") == "METHOD_PINNED"]
+    if len(pins) != 1:
+        return f"PIN_COUNT_INVALID: {len(pins)}"
+    return str(pins[0])
+
+
 def test(binary: Path, method: Path) -> list[str]:
     problems: list[str] = []
     with tempfile.TemporaryDirectory(prefix="pcpos-method-inventory-") as temp:
@@ -31,6 +53,10 @@ def test(binary: Path, method: Path) -> list[str]:
         print("clean:", clean.returncode, clean.stdout.strip())
         if clean.returncode != 0:
             return ["original plugin method did not pass verification"]
+        clean_pin = initial_method_pin(binary, root, Path(temp) / "clean-workspace")
+        print("clean register METHOD_PINNED:", clean_pin)
+        if clean_pin != "FILES_VERIFIED_AGAINST_OWN_MANIFEST":
+            problems.append(f"clean method was not verified at register init: {clean_pin}")
 
         original = root / "MODULES/03_Science/SOURCE/Specification.md"
         source = original.read_text(encoding="utf-8")
@@ -43,6 +69,10 @@ def test(binary: Path, method: Path) -> list[str]:
         print("unlisted module:", result.returncode, result.stdout.strip())
         if result.returncode == 0:
             problems.append("unlisted module was accepted as release-identical")
+        added_pin = initial_method_pin(binary, root, Path(temp) / "modified-workspace")
+        print("unlisted-module register METHOD_PINNED:", added_pin)
+        if added_pin != "DECLARED_NOT_VERIFIED":
+            problems.append(f"unlisted module received inappropriate register pin: {added_pin}")
         modules = invoke(binary, "modules", root)
         if "auditprobe" not in modules.stdout.lower():
             problems.append("unlisted module not discoverable; reproduction differs")
