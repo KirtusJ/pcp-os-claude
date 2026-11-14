@@ -35,9 +35,14 @@ def query(binary: Path, method: Path, hashes: tuple[str, str]) -> tuple[dict, st
     if p.returncode == 0:
         verdict = "SERVED_CONSISTENT" if matching else "SERVED_MIXED_IDENTITY"
     elif p.returncode == 6 and "changed during clause retrieval" in p.stderr:
-        # A fixed host may reject a method that changed between source
-        # discovery and retrieval. That is a safe, expected race outcome.
+        # A fixed host may reject text changed between discovery and rendering.
         verdict = "REFUSED_CHANGED_SOURCE"
+    elif (p.returncode == 6 and "core is not a module of the method text at hand" in p.stderr
+          and "The modules are:" in p.stderr):
+        # During an adversarial replacement, a bounded discovery read may
+        # refuse to recognize Core instead of reading a transient non-regular
+        # file. No text is returned or labelled under an incorrect digest.
+        verdict = "REFUSED_CORE_NOT_READABLE"
     else:
         verdict = "UNEXPECTED_REFUSAL"
     return {
@@ -91,6 +96,7 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
         writer.start()
         mismatches = []
         refused = 0
+        discovery_refused = 0
         unexpected = []
         calls = 0
         start = time.monotonic()
@@ -100,6 +106,8 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
                 row, verdict = query(binary, copy, hashes)
                 if verdict == "REFUSED_CHANGED_SOURCE":
                     refused += 1
+                elif verdict == "REFUSED_CORE_NOT_READABLE":
+                    discovery_refused += 1
                 elif verdict == "UNEXPECTED_REFUSAL":
                     row["call"] = calls
                     unexpected.append(row)
@@ -119,6 +127,7 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
             "atomic_replacements": count[0],
             "observed_mismatches": mismatches,
             "safe_changed_source_refusals": refused,
+            "safe_discovery_refusals": discovery_refused,
             "unexpected_failures": unexpected,
             "writer_errors": errors,
             "result": ("CROSSED_IDENTITY_OBSERVED" if mismatches else
