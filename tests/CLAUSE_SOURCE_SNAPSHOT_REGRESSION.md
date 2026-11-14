@@ -16,6 +16,8 @@ The test makes a temporary copy of `method/`, creates two complete variants of C
 - **Exit 0:** no mismatch was found *in this finite run*. This is **not** evidence that the race has been repaired.
 - **Exit 2:** the swapping thread reported an error.
 
+During concurrent replacement, an explicit `exit 6` refusal stating that the Specification **changed during clause retrieval** counts as an appropriate defense, not a mixed-identity failure. Other nonzero exits are reported as unexpected failures. A successful clause response must always pair its rendered variant with that variant's full Specification SHA.
+
 The script does not change a real register, commission a review, obtain new authority, or modify the distributed method. The writer is one Python thread in the same test process, not an AI subagent or an independent reviewer.
 
 ## Exact mechanism
