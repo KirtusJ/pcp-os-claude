@@ -18,9 +18,13 @@ It exercises:
 4. A one-line modification of a manifest-listed Science source, which must fail.
 5. An unlisted ordinary file, which must also invalidate a *whole-tree* identity
    assertion.
+6. An unexpected symlink to a valid listed source, which must not count as
+   packaged release text merely because its target can be read.
+7. An unlisted file inside an optional `TOOLS/` directory: legitimate omission
+   of a plugin tool is not permission to add an untracked file in that subtree.
 
 The current build 22 binary passes controls 1 and 4, discovers the new module,
-but incorrectly succeeds on controls 2 and 5. It exits 0 for the original method
+but incorrectly succeeds on controls 2, 5, 6, and 7. It exits 0 for the original method
 directory and for both unlisted-entry variants, while reporting the same manifest
 fingerprint and listed-file counts. Thus the regression script intentionally exits
 with code 1 until the binary is repaired.
