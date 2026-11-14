@@ -7,6 +7,9 @@ diagnostic-only draft change, not an implementation correction.
 
 Run `python3 tests/method_inventory_regression.py` in this plugin repository on
 Linux x86_64, with its packaged `servers/linux-x86_64/pcpos` executable.
+The optional `--method` flag also accepts a **complete** extracted ACR
+Implementation directory. Tests preserve existing optional tool files and
+original Specification bytes.
 
 The test copies the distributed `method/` directory to a temporary location.
 It also creates isolated temporary registers through the CLI's `init` command.
@@ -53,12 +56,22 @@ the original file. The test checks restoration after every mutation and at
 completion. A timeout is a bounded observation of blocking under the test's
 conditions, not proof of a remote denial-of-service exploit.
 
-The current build 22 binary passes controls 1 and 4, discovers the new module,
-but incorrectly succeeds on controls 2, 5, 6, 7, 9 and 10, and on 11 when run without privileged file-read override. It exits 0 for the original method directory and for the unlisted-entry variants, while
-reporting the same manifest fingerprint and listed-file counts. The disposable
-register also records `FILES_VERIFIED_AGAINST_OWN_MANIFEST` for the injected
-module, contrary to the requirement's intended difference from released text. Thus the regression script intentionally exits
-with code 1 until the binary is repaired.
+The build 22 binary passes the clean and manifest-listed-change controls,
+but incorrectly succeeds for unlisted entries and substituted links. As an
+unprivileged Linux account it also reports success for a present unreadable
+optional tool. The disposable register incorrectly pins the injected module
+tree as `FILES_VERIFIED_AGAINST_OWN_MANIFEST`. These results were reproduced
+both with the full **58-file** method packet and with the **42-file text-only**
+plugin method directory, in a separate local probe whose executable SHA-256
+was `c2c6795d36027c6e9041d63c5349f97434fe5709a6bcb649f4146faee9f03dcd`.
+
+The test requires the documented integrity-refusal **exit code 6** plus a
+relevant diagnostic for negative checks; a crash or arbitrary nonzero exit
+is **not** a pass. Discovery of the injected module is recorded as an
+observation, not an acceptance condition, because a repaired host may
+quarantine it. Source bytes are restored exactly after testing, and the
+final clean control must verify again. The current binary is expected to
+make this test exit 1 until the underlying source is repaired.
 
 This is a separate pre-read availability failure: a named pipe substituted
 for the manifest or a listed Specification blocks `fs::read` before the
