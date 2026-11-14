@@ -189,6 +189,57 @@ def test(binary: Path, method: Path) -> list[str]:
                 optional.chmod(original_optional_mode)
         if not tools_existed:
             tools_dir.rmdir()
+
+        # A non-regular manifest or listed Specification must be refused
+        # *before* any blocking read, rather than eventually being noticed by
+        # the directory scan. Always restore the original bytes in finally.
+        # Bound these subprocesses so the vulnerable binary cannot hang CI.
+        for label, rel, diagnostic in (
+            ("manifest named pipe", "MANIFEST.json", "manifest"),
+            ("listed Specification named pipe",
+             "MODULES/03_Science/SOURCE/Specification.md", "differing"),
+        ):
+            target = root / rel
+            original_data = target.read_bytes()
+            target.unlink()
+            try:
+                os.mkfifo(target)
+                try:
+                    pipe_result = subprocess.run(
+                        [str(binary), "method", str(root)],
+                        capture_output=True, text=True, check=False, timeout=2.0,
+                    )
+                except subprocess.TimeoutExpired:
+                    problems.append(f"{label}: verifier blocked on a named pipe for over 2 seconds")
+                    print(f"{label}: TIMED OUT (2 seconds)")
+                else:
+                    print(f"{label}:", pipe_result.returncode,
+                          (pipe_result.stdout + pipe_result.stderr).strip())
+                    require_integrity_rejection(label, pipe_result, diagnostic, problems)
+            finally:
+                target.unlink(missing_ok=True)
+                target.write_bytes(original_data)
+
+        # The manifest itself must be an ordinary file, not a symlink to
+        # byte-identical content outside the method tree.
+        manifest = root / "MANIFEST.json"
+        manifest_bytes = manifest.read_bytes()
+        manifest_shadow = Path(temp) / "manifest-shadow.json"
+        manifest_shadow.write_bytes(manifest_bytes)
+        manifest.unlink()
+        try:
+            manifest.symlink_to(manifest_shadow)
+            linked_manifest = invoke(binary, "method", root)
+            print("manifest symlink:", linked_manifest.returncode,
+                  (linked_manifest.stdout + linked_manifest.stderr).strip())
+            require_integrity_rejection(
+                "manifest symlink to identical external bytes",
+                linked_manifest, "manifest", problems,
+            )
+        finally:
+            manifest.unlink(missing_ok=True)
+            manifest.write_bytes(manifest_bytes)
+
         # An apparently successful negative check can be caused by leftover
         # mutations. Confirm that the exact original bytes still verify.
         restored = invoke(binary, "method", root)
