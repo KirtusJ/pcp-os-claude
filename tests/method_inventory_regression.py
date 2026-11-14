@@ -24,12 +24,23 @@ def invoke(binary: Path, verb: str, method: Path) -> subprocess.CompletedProcess
     )
 
 
+def require_integrity_rejection(
+    name: str, result: subprocess.CompletedProcess[str], marker: str, problems: list[str]
+) -> None:
+    """Only the documented integrity refusal (exit 6) counts, never a crash."""
+    diagnostic = (result.stdout + "\n" + result.stderr).lower()
+    if result.returncode != 6:
+        problems.append(f"{name}: expected exit 6, observed {result.returncode}")
+    elif marker.lower() not in diagnostic:
+        problems.append(f"{name}: exit 6 without {marker!r} diagnostic")
+
+
 def initial_method_pin(binary: Path, method: Path, workspace: Path) -> str:
     """Create a disposable register without adopting ACR, then inspect METHOD_PINNED."""
     workspace.mkdir()
     register = workspace / ".pcp/register.jsonl"
     env = dict(os.environ, PCPOS_ROOT=str(workspace), PCPOS_METHOD=str(method),
-               PCPOS_ACTOR="auditor", PCPOS_PRINCIPAL="operator", PCPOS_EDITION="ENTERPRISE")
+               PCPOS_ACTOR="auditor", PCPOS_PRINCIPAL="operator", PCPOS_EDITION="COMMERCIAL")
     run = subprocess.run(
         [str(binary), "init", str(register), "--principal", "operator"],
         capture_output=True, text=True, check=False, env=env,
@@ -59,7 +70,8 @@ def test(binary: Path, method: Path) -> list[str]:
             problems.append(f"clean method was not verified at register init: {clean_pin}")
 
         original = root / "MODULES/03_Science/SOURCE/Specification.md"
-        source = original.read_text(encoding="utf-8")
+        original_bytes = original.read_bytes()
+        source = original_bytes.decode("utf-8")
         if "acr.science" not in source:
             return ["Science component header not found"]
         extra = root / "MODULES/99_AuditProbe/SOURCE/Specification.md"
@@ -67,15 +79,18 @@ def test(binary: Path, method: Path) -> list[str]:
         extra.write_text(source.replace("acr.science", "acr.auditprobe", 1), encoding="utf-8")
         result = invoke(binary, "method", root)
         print("unlisted module:", result.returncode, result.stdout.strip())
-        if result.returncode == 0:
-            problems.append("unlisted module was accepted as release-identical")
+        require_integrity_rejection("unlisted module", result, "unexpected", problems)
         added_pin = initial_method_pin(binary, root, Path(temp) / "modified-workspace")
         print("unlisted-module register METHOD_PINNED:", added_pin)
         if added_pin != "DECLARED_NOT_VERIFIED":
             problems.append(f"unlisted module received inappropriate register pin: {added_pin}")
         modules = invoke(binary, "modules", root)
-        if "auditprobe" not in modules.stdout.lower():
-            problems.append("unlisted module not discoverable; reproduction differs")
+        print("module discovery (diagnostic only):", modules.returncode,
+              "rogue listed:", "auditprobe" in modules.stdout.lower())
+        # A repaired host may suppress untrusted modules when verification fails.
+        # Either withholding or exposing the rogue is acceptable to this test.
+        if modules.returncode not in (0, 6):
+            problems.append(f"module inspection crashed or failed unexpectedly: exit {modules.returncode}")
         extra.unlink()
         extra.parent.rmdir()  # SOURCE
         extra.parent.parent.rmdir()  # 99_AuditProbe
@@ -86,23 +101,20 @@ def test(binary: Path, method: Path) -> list[str]:
         empty_module.mkdir()
         empty = invoke(binary, "method", root)
         print("unlisted empty directory:", empty.returncode, empty.stdout.strip())
-        if empty.returncode == 0:
-            problems.append("unlisted empty directory was accepted as release-identical")
+        require_integrity_rejection("unlisted empty directory", empty, "unexpected", problems)
         empty_module.rmdir()
 
-        original.write_text(source + "\nAUDIT_NEGATIVE_CONTROL\n", encoding="utf-8")
+        original.write_bytes(original_bytes + b"\nAUDIT_NEGATIVE_CONTROL\n")
         modified = invoke(binary, "method", root)
         print("edited listed file:", modified.returncode, modified.stdout.strip())
-        if modified.returncode == 0:
-            problems.append("listed file modification was not rejected")
-        original.write_text(source, encoding="utf-8")
+        require_integrity_rejection("changed listed file", modified, "differing", problems)
+        original.write_bytes(original_bytes)
 
         stray = root / "unlisted-file.txt"
         stray.write_text("extra payload\n", encoding="utf-8")
         other = invoke(binary, "method", root)
         print("unlisted file:", other.returncode, other.stdout.strip())
-        if other.returncode == 0:
-            problems.append("unlisted file was accepted as release-identical")
+        require_integrity_rejection("unlisted ordinary file", other, "unexpected", problems)
         stray.unlink()
 
         # An unexpected symbolic link must not silently count as release text.
@@ -112,23 +124,22 @@ def test(binary: Path, method: Path) -> list[str]:
         link.symlink_to("MODULES/03_Science/SOURCE/Specification.md")
         linked = invoke(binary, "method", root)
         print("unlisted symlink:", linked.returncode, linked.stdout.strip())
-        if linked.returncode == 0:
-            problems.append("unlisted symlink was accepted as release-identical")
+        require_integrity_rejection("unlisted symlink", linked, "unexpected", problems)
         link.unlink()
 
         # This symlink REPLACES a manifest-listed path with byte-identical
         # content kept outside the method tree. Hash matching alone is not
         # sufficient to assert the packaged file's local identity.
         shadow = Path(temp) / "shadow-science-spec.md"
-        shadow.write_text(source, encoding="utf-8")
+        shadow.write_bytes(original_bytes)
         original.unlink()
         original.symlink_to(shadow)
         listed_link = invoke(binary, "method", root)
         print("manifest-listed symlink:", listed_link.returncode, listed_link.stdout.strip())
-        if listed_link.returncode == 0:
-            problems.append("symlink replacing a manifest-listed source was accepted as release-identical")
+        require_integrity_rejection("listed symlink to outside source", listed_link,
+                                    "unexpected", problems)
         original.unlink()
-        original.write_text(source, encoding="utf-8")
+        original.write_bytes(original_bytes)
 
         # Omission of the packet's TOOLS/ programs is legitimate in the plugin,
         # but addition of unlisted TOOLS/ content is a different condition.
@@ -138,8 +149,8 @@ def test(binary: Path, method: Path) -> list[str]:
         rogue.write_text("extra executable-support data\\n", encoding="utf-8")
         omitted_subtree = invoke(binary, "method", root)
         print("unlisted TOOLS entry:", omitted_subtree.returncode, omitted_subtree.stdout.strip())
-        if omitted_subtree.returncode == 0:
-            problems.append("unlisted file under omitted TOOLS/ was accepted as release-identical")
+        require_integrity_rejection("unlisted file in TOOLS", omitted_subtree,
+                                    "unexpected", problems)
         rogue.unlink()
 
         # This path IS listed in the manifest but MAY be missing in a plugin.
@@ -150,8 +161,8 @@ def test(binary: Path, method: Path) -> list[str]:
         optional.write_bytes(b"INJECTED NOT-RELEASE DATA\\n")
         readable = invoke(binary, "method", root)
         print("readable changed optional tool:", readable.returncode, readable.stdout.strip())
-        if readable.returncode == 0:
-            problems.append("readable changed manifest-listed optional tool accepted")
+        require_integrity_rejection("readable altered optional tool", readable,
+                                    "differing", problems)
         optional.chmod(0o000)
         try:
             try:
@@ -160,14 +171,20 @@ def test(binary: Path, method: Path) -> list[str]:
                 unreadable = invoke(binary, "method", root)
                 print("unreadable optional tool:", unreadable.returncode,
                       unreadable.stdout.strip())
-                if unreadable.returncode == 0:
-                    problems.append("unreadable manifest-listed optional tool counted as absent")
+                require_integrity_rejection("unreadable optional tool", unreadable,
+                                            "unreadable", problems)
             else:
                 print("SKIP unreadable-optional-tool control: this account can read mode 000 files")
         finally:
             optional.chmod(0o600)
             optional.unlink()
         tools_dir.rmdir()
+        # An apparently successful negative check can be caused by leftover
+        # mutations. Confirm that the exact original bytes still verify.
+        restored = invoke(binary, "method", root)
+        print("restored clean method:", restored.returncode, restored.stdout.strip())
+        if restored.returncode != 0:
+            problems.append(f"method was not restored after testing: exit {restored.returncode}")
     return problems
 
 
@@ -180,6 +197,8 @@ def main() -> int:
     binary, method = args.binary.resolve(), args.method.resolve()
     if not binary.is_file() or not method.is_dir():
         parser.error(f"binary or method unavailable: {binary}, {method}")
+    if not os.access(binary, os.X_OK):
+        parser.error(f"pcpos binary is not executable: {binary}; restore its Git executable mode")
     problems = test(binary, method)
     for problem in problems:
         print("FAIL:", problem, file=sys.stderr)
