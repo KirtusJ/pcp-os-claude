@@ -63,7 +63,7 @@ def test(binary: Path, method: Path) -> list[str]:
         clean = invoke(binary, "method", root)
         print("clean:", clean.returncode, clean.stdout.strip())
         if clean.returncode != 0:
-            return ["original plugin method did not pass verification"]
+            return ["original method directory did not pass verification"]
         clean_pin = initial_method_pin(binary, root, Path(temp) / "clean-workspace")
         print("clean register METHOD_PINNED:", clean_pin)
         if clean_pin != "FILES_VERIFIED_AGAINST_OWN_MANIFEST":
@@ -144,6 +144,7 @@ def test(binary: Path, method: Path) -> list[str]:
         # Omission of the packet's TOOLS/ programs is legitimate in the plugin,
         # but addition of unlisted TOOLS/ content is a different condition.
         tools_dir = root / "TOOLS"
+        tools_existed = tools_dir.is_dir()
         tools_dir.mkdir(exist_ok=True)
         rogue = tools_dir / "not-in-release.txt"
         rogue.write_text("extra executable-support data\\n", encoding="utf-8")
@@ -158,6 +159,10 @@ def test(binary: Path, method: Path) -> list[str]:
         # verification of the released bytes. The old code treated all
         # fs::read failures as "absent", including PermissionDenied.
         optional = tools_dir / "acr.py"
+        # Full ACR Implementation packets contain this file; text-only plugins
+        # omit it. Back up an original file and permissions in either case.
+        original_optional = optional.read_bytes() if optional.exists() else None
+        original_optional_mode = (optional.stat().st_mode & 0o777) if original_optional is not None else None
         optional.write_bytes(b"INJECTED NOT-RELEASE DATA\\n")
         readable = invoke(binary, "method", root)
         print("readable changed optional tool:", readable.returncode, readable.stdout.strip())
@@ -177,8 +182,13 @@ def test(binary: Path, method: Path) -> list[str]:
                 print("SKIP unreadable-optional-tool control: this account can read mode 000 files")
         finally:
             optional.chmod(0o600)
-            optional.unlink()
-        tools_dir.rmdir()
+            if original_optional is None:
+                optional.unlink()
+            else:
+                optional.write_bytes(original_optional)
+                optional.chmod(original_optional_mode)
+        if not tools_existed:
+            tools_dir.rmdir()
         # An apparently successful negative check can be caused by leftover
         # mutations. Confirm that the exact original bytes still verify.
         restored = invoke(binary, "method", root)
