@@ -43,6 +43,11 @@ def query(binary: Path, method: Path, hashes: tuple[str, str]) -> tuple[dict, st
         # refuse to recognize Core instead of reading a transient non-regular
         # file. No text is returned or labelled under an incorrect digest.
         verdict = "REFUSED_CORE_NOT_READABLE"
+    elif (p.returncode == 6 and "the Specification of acr.core cannot be read:" in p.stderr
+          and ("changed while reading" in p.stderr or "changed while opening" in p.stderr)):
+        # The bounded reader detects a changed inode during opening/reading
+        # and refuses the clause rather than issuing a mixed-identity header.
+        verdict = "REFUSED_PATH_CHANGED"
     else:
         verdict = "UNEXPECTED_REFUSAL"
     return {
@@ -97,6 +102,7 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
         mismatches = []
         refused = 0
         discovery_refused = 0
+        path_changed_refused = 0
         unexpected = []
         calls = 0
         start = time.monotonic()
@@ -108,6 +114,8 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
                     refused += 1
                 elif verdict == "REFUSED_CORE_NOT_READABLE":
                     discovery_refused += 1
+                elif verdict == "REFUSED_PATH_CHANGED":
+                    path_changed_refused += 1
                 elif verdict == "UNEXPECTED_REFUSAL":
                     row["call"] = calls
                     unexpected.append(row)
@@ -128,6 +136,7 @@ def probe(binary: Path, method: Path, max_calls: int = 90, deadline_seconds: flo
             "observed_mismatches": mismatches,
             "safe_changed_source_refusals": refused,
             "safe_discovery_refusals": discovery_refused,
+            "safe_path_changed_refusals": path_changed_refused,
             "unexpected_failures": unexpected,
             "writer_errors": errors,
             "result": ("CROSSED_IDENTITY_OBSERVED" if mismatches else
